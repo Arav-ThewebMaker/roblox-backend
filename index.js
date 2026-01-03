@@ -64,11 +64,13 @@ async function getUserCreations(userId) {
 
       for (const game of json.data) {
         const universeId = game.id;
+        const placeId = game.rootPlace.id
         const iconUrl = await getGameIcon(universeId);
 
         creations.push({
           name: game.name,
           universeId: universeId,
+          placeId: placeId,
           iconUrl: iconUrl
         });
       }

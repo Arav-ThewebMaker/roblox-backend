@@ -22,13 +22,12 @@ function writePlayers(data) {
 // Fetch public creations (games) of a Roblox user by userId
 async function getUserCreations(userId) {
   const creations = [];
-
   try {
-    let cursor = ""; // pagination cursor
+    let cursor = "";
     let hasNextPage = true;
 
     while (hasNextPage) {
-      const url = `https://games.roblox.com/v1/users/${userId}/games?limit=50&sortOrder=Asc&cursor=${cursor}`;
+      const url = `https://games.roblox.com/v2/users/${userId}/games?limit=50&sortOrder=Asc&cursor=${cursor}`;
       const response = await fetch(url);
       if (!response.ok) break;
 
@@ -49,6 +48,7 @@ async function getUserCreations(userId) {
 
   return creations;
 }
+
 
 // Endpoint for Roblox player join
 app.post("/player-join", async (req, res) => {

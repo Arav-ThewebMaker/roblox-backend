@@ -68,9 +68,11 @@ app.post("/player-join", async (req, res) => {
   // Fetch public creations
   const creations = await getUserCreations(userId);
 
+  // Respond with players info + creations + latest joiner
   res.json({
     uniquePlayers: data.players.length,
     players: data.players,
+    latestJoiner: userId,
     creations: creations
   });
 });

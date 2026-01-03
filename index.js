@@ -7,19 +7,44 @@ app.use(express.json());
 
 const FILE_PATH = "./players.json";
 
-// Read stored player data
 function readPlayers() {
   if (!fs.existsSync(FILE_PATH)) return { players: [] };
-  const data = fs.readFileSync(FILE_PATH, "utf-8");
-  return JSON.parse(data);
+  return JSON.parse(fs.readFileSync(FILE_PATH, "utf-8"));
 }
 
-// Write player data
 function writePlayers(data) {
   fs.writeFileSync(FILE_PATH, JSON.stringify(data, null, 2));
 }
 
-// Fetch public creations (games) of a Roblox user by userId
+const thumbnailCache = new Map();
+
+async function getGameIcon(universeId) {
+  if (thumbnailCache.has(universeId)) {
+    return thumbnailCache.get(universeId);
+  }
+
+  const url =
+    "https://thumbnails.roblox.com/v1/games/icons" +
+    `?universeIds=${universeId}&size=256x256&format=Png&isCircular=false`;
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+
+    const json = await res.json();
+    const entry = json.data && json.data[0];
+
+    if (entry && entry.state === "Completed") {
+      thumbnailCache.set(universeId, entry.imageUrl);
+      return entry.imageUrl;
+    }
+  } catch (err) {
+    console.error("Thumbnail fetch failed:", universeId, err);
+  }
+
+  return null;
+}
+
 async function getUserCreations(userId) {
   const creations = [];
 
@@ -28,19 +53,25 @@ async function getUserCreations(userId) {
     let hasNextPage = true;
 
     while (hasNextPage) {
-      const url = `https://games.roblox.com/v2/users/${userId}/games?limit=50&sortOrder=Asc&cursor=${cursor}`;
+      const url =
+        `https://games.roblox.com/v2/users/${userId}/games` +
+        `?limit=50&sortOrder=Asc&cursor=${cursor}`;
+
       const response = await fetch(url);
       if (!response.ok) break;
 
       const json = await response.json();
 
-      json.data.forEach(game => {
+      for (const game of json.data) {
+        const universeId = game.id;
+        const iconUrl = await getGameIcon(universeId);
+
         creations.push({
           name: game.name,
-          universeId: game.id,          // ✅ Universe ID
-          rootPlaceId: game.rootPlaceId // ✅ Main place
+          universeId: universeId,
+          iconUrl: iconUrl
         });
-      });
+      }
 
       cursor = json.nextPageCursor;
       hasNextPage = !!cursor;
@@ -52,31 +83,25 @@ async function getUserCreations(userId) {
   return creations;
 }
 
-
-// Endpoint for Roblox player join
 app.post("/player-join", async (req, res) => {
   const { userId } = req.body;
-
   if (!userId) {
     return res.status(400).json({ error: "UserId required" });
   }
 
-  // Save player to local JSON
   const data = readPlayers();
   if (!data.players.includes(userId)) {
     data.players.push(userId);
     writePlayers(data);
   }
 
-  // Fetch public creations
   const creations = await getUserCreations(userId);
 
-  // Respond with players info + creations + latest joiner
   res.json({
     uniquePlayers: data.players.length,
     players: data.players,
     latestJoiner: userId,
-    creations: creations
+    creations
   });
 });
 

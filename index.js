@@ -22,6 +22,7 @@ function writePlayers(data) {
 // Fetch public creations (games) of a Roblox user by userId
 async function getUserCreations(userId) {
   const creations = [];
+
   try {
     let cursor = "";
     let hasNextPage = true;
@@ -32,10 +33,12 @@ async function getUserCreations(userId) {
       if (!response.ok) break;
 
       const json = await response.json();
+
       json.data.forEach(game => {
         creations.push({
           name: game.name,
-          placeId: game.rootPlaceId
+          universeId: game.id,          // ✅ Universe ID
+          rootPlaceId: game.rootPlaceId // ✅ Main place
         });
       });
 

@@ -71,7 +71,8 @@ async function getUserCreations(userId) {
           name: game.name,
           universeId: universeId,
           placeId: placeId,
-          iconUrl: iconUrl
+          iconUrl: iconUrl,
+          Visits: game.placeVisits
         });
       }
 
